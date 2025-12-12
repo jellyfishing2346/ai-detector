@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Content Detector</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;600;700&family=Lexend:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0f172a;
+      --secondary: #334155;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --text: #1e293b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 420px;
+      min-height: 500px;
+      font-family: 'Lexend', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    .header {
+      background: var(--primary);
+      padding: 24px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%);
+      animation: pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: -0.02em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 6px;
+      font-weight: 300;
+      position: relative;
+      z-index: 1;
+    }
+
+    .api-setup {
+      padding: 20px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .api-setup label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .api-setup input {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: 'Inconsolata', monospace;
+      font-size: 13px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      background: var(--bg);
+    }
+
+    .api-setup input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: white;
+    }
+
+    .api-setup .hint {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .content {
+      padding: 20px;
+    }
+
+    .analyze-btn {
+      width: 100%;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, var(--accent) 0%, #0891b2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Lexend', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .analyze-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .analyze-btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .analyze-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(6, 182, 212, 0.3);
+    }
+
+    .analyze-btn:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .analyze-btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 30px 20px;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading p {
+      font-size: 13px;
+      color: var(--secondary);
+    }
+
+    .results {
+      display: none;
+      margin-top: 20px;
+      animation: slideUp 0.4s ease;
+    }
+
+    .results.active {
+      display: block;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .verdict {
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      border-left: 4px solid;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .verdict.ai {
+      border-color: var(--danger);
+      background: linear-gradient(135deg, #fff 0%, #fef2f2 100%);
+    }
+
+    .verdict.human {
+      border-color: var(--success);
+      background: linear-gradient(135deg, #fff 0%, #f0fdf4 100%);
+    }
+
+    .verdict.uncertain {
+      border-color: var(--warning);
+      background: linear-gradient(135deg, #fff 0%, #fefce8 100%);
+    }
+
+    .verdict-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      opacity: 0.7;
+    }
+
+    .verdict-text {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .confidence {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .confidence-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+
+    .confidence-text {
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inconsolata', monospace;
+    }
+
+    .analysis {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .analysis h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--secondary);
+    }
+
+    .analysis p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #475569;
+    }
+
+    .error {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      padding: 16px;
+      border-radius: 8px;
+      color: #991b1b;
+      font-size: 13px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .error.active {
+      display: block;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
+      font-family: 'Inconsolata', monospace;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>AI Content Detector</h1>
+    <p>Analyze webpage content with Claude</p>
+  </div>
+
+  <div class="api-setup">
+    <label for="apiKey">Anthropic API Key</label>
+    <input 
+      type="password" 
+      id="apiKey" 
+      placeholder="sk-ant-api03-..."
+      autocomplete="off"
+    >
+    <p class="hint">Get your API key from console.anthropic.com</p>
+  </div>
+
+  <div class="content">
+    <button id="analyzeBtn" class="analyze-btn">
+      <span>Analyze This Page</span>
+    </button>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Analyzing content with Claude...</p>
+    </div>
+
+    <div id="results" class="results">
+      <div id="verdict" class="verdict">
+        <div class="verdict-label">Detection Result</div>
+        <div id="verdictText" class="verdict-text"></div>
+        <div class="confidence">
+          <div class="confidence-bar">
+            <div id="confidenceFill" class="confidence-fill"></div>
+          </div>
+          <div id="confidenceText" class="confidence-text"></div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Word Count</div>
+          <div id="wordCount" class="stat-value">-</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Analysis Time</div>
+          <div id="analysisTime" class="stat-value">-</div>
+        </div>
+      </div>
+
+      <div class="analysis">
+        <h3>Detailed Analysis</h3>
+        <p id="analysisText"></p>
+      </div>
+    </div>
+
+    <div id="error" class="error"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
