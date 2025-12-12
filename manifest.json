@@ -5,7 +5,8 @@
   "description": "Analyzes webpage content to detect if it's AI-generated using Claude AI",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "action": {
     "default_popup": "popup.html",
