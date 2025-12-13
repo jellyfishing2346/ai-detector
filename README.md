@@ -52,5 +52,3 @@ graph TD;
 - `content.js` — Content script for extracting page text
 - `icons.py` — (Optional) Icon generation script
 
-## License
-MIT
